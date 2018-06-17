@@ -327,6 +327,7 @@ void Filter::sobel(Image * image)
 			newimage->setPixel(nr, ng, nb, x, y);
 		}
 	}
+	
 
 	for (int x = 0; x < image->getWidth(); x++)
 	{

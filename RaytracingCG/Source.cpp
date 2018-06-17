@@ -17,7 +17,7 @@ Image *img;
 void init(void)
 {
 	img = new Image(300, 300);
-	//img = Input::loadImage("ReflectoSpheres8.ptm");
+	//img = Input::loadImage("imagem.ptm");
 	renderer = Input::loadScene("scenefile.txt");
 	
 	
@@ -56,8 +56,8 @@ int main(int argc, char** argv)
 	renderer->run(img,60);
 	//Output::saveImage(img, "DefaultSave.ptm");
 	
-	
-	//Filter::bioGreyScale(img);
+	Filter::greyScale(img);
+	Filter::sobel(img);
 
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);

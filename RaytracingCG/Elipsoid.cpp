@@ -36,8 +36,25 @@ glm::vec3 Elipsoid::coltest(glm::vec3 porigem, glm::vec3 ray, float& t, int& col
 	
 	
 	float aq = a* pow(ray.x, 2) + b *  pow(ray.y, 2) + c* pow(ray.z, 2) + d*ray.x * ray.y + e*ray.x * ray.z + f*ray.y * ray.z;
-	float bq= 2*a*porigem.x *ray.x + 2*b*porigem.y*ray.y + 2*c*porigem.z*ray.z + d*(porigem.x*ray.y + porigem.x*ray.y);
-	float cq = 0;
+	float bq = 2 * a*porigem.x *ray.x + 2 * b*porigem.y*ray.y + 2 * c*porigem.z*ray.z + d * (porigem.x*ray.y + porigem.y*ray.x) + 
+		e * (porigem.x * ray.z + porigem.z * ray.x) + f * (porigem.y * ray.z + porigem.z * ray.y) + g * ray.x + h * ray.y + i * ray.z;
+	float cq = a * pow(porigem.x, 2) + b * pow(porigem.y, 2) + c * pow(porigem.z, 2) + d * porigem.x * porigem.y + e * porigem.x * porigem.z +
+		f * porigem.y * porigem.z + g * porigem.x + h * porigem.y + i * porigem.z + j;
+
+	if (aq == 0)
+	{
+		t = (-1) * cq / bq;
+	}
+	else
+	{
+		float delta = 2 * bq - 4 * aq*cq;
+		if (delta == 0)
+		{
+
+		}
+	}
+
+
 	return intpoint;
 }
 
