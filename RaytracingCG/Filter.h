@@ -1,5 +1,6 @@
 #pragma once
 #include "Image.h"
+#include <iostream>
 #include "glm\glm.hpp"
 
 static class Filter

@@ -153,18 +153,16 @@ void Filter::BScale(Image* image)
 
 void Filter::prewitt(Image * image)
 {
-	float horizontalf[3][3] = { {1,1,1},{ 0,0,0 },{-1,-1,-1 } };
-	float verticalf[3][3] = { { -1,0,1 },{ -1,0,1 },{ -1,0, 1 } };
+	float horizontalf[3][3] = { {-1,1,-1},
+								{ 0,0,0 },
+								{1,-1,1 } };
+	float verticalf[3][3] = { { 1,0,-1 },	
+							  { -1,0,1 },
+	                          { 1,0,-1 } };
 
-	Image *newimage = new Image(image->getWidth(), image->getHeight());
-
-	for (int x = 0; x < image->getWidth(); x++)
-	{
-		for (int y = 0; y < image->getHeight(); y++)
-		{
-			newimage->setPixel(image->getPixel(x, y), x, y);
-		}
-	}
+	Image *newimageH = new Image(image->getWidth(), image->getHeight());
+	Image *newimageV = new Image(image->getWidth(), image->getHeight());
+	Image *newimageFull = new Image(image->getWidth(), image->getHeight());
 
 	//HORIZONTAL
 	for (int x = 1; x < image->getWidth()-1; x++)
@@ -193,17 +191,10 @@ void Filter::prewitt(Image * image)
 			ng = ccolor.g * 255;
 			nb = ccolor.b * 255;
 
-			newimage->setPixel(nr, ng, nb, x, y);
+			newimageH->setPixel(nr, ng, nb, x, y);
 		}
 	}
 
-	for (int x = 0; x < image->getWidth(); x++)
-	{
-		for (int y = 0; y < image->getHeight(); y++)
-		{
-			image->setPixel(newimage->getPixel(x, y), x, y);
-		}
-	}
 	//VERTICAL
 	for (int x = 1; x < image->getWidth() - 1; x++)
 	{
@@ -231,33 +222,62 @@ void Filter::prewitt(Image * image)
 			ng = ccolor.g * 255;
 			nb = ccolor.b * 255;
 
-			newimage->setPixel(nr, ng, nb, x, y);
+			newimageV->setPixel(nr, ng, nb, x, y);
 		}
 	}
+	int white = (255 << 16) | (255 << 8) | 255;
+	//FUSE
+	for (int x = 1; x < image->getWidth()-1; x++)
+	{
+		for (int y = 1; y < image->getHeight()-1; y++)
+		{
+			
+			/*
+			if (newimageH->getPixel(x, y) != 0)
+			{
+				newimageFull->setPixel(newimageH->getPixel(x, y), x, y);
+			}
+			else if (newimageV->getPixel(x, y) != 0)
+			{
+				newimageFull->setPixel(newimageV->getPixel(x, y), x, y);
+			}
+			else
+			{
+				newimageFull->setPixel(0, 0, 0, x, y);
+			}*/	
+
+			long ncolor = newimageH->getPixel(x, y) + newimageV->getPixel(x, y);
+			if (ncolor > white)
+			{
+				ncolor = white;
+			}
+			else if (ncolor < 0)
+			{
+				ncolor = 0;
+			}
+			newimageFull->setPixel(ncolor, x, y);
+		}
+	}
+
+	
 
 	for (int x = 0; x < image->getWidth(); x++)
 	{
 		for (int y = 0; y < image->getHeight(); y++)
 		{
-			image->setPixel(newimage->getPixel(x, y), x, y);
+			image->setPixel(newimageFull->getPixel(x, y), x, y);
 		}
 	}
 }
 
 void Filter::sobel(Image * image)
 {
-	float horizontalf[3][3] = { { 1,2,1 },{ 0,0,0 },{ -1,-2,-1 } };
-	float verticalf[3][3] = { { -1,0,1 },{ -2,0,2 },{ -1,0, 1 } };
+	float horizontalf[3][3] = { { 1,-2,1 },{ 0,0,0 },{ -1,2,-1 } };
+	float verticalf[3][3] = { { -2,0,2 },{ 2,0,-2 },{ -1,0, 1 } };
 
-	Image *newimage = new Image(image->getWidth(), image->getHeight());
-
-	for (int x = 0; x < image->getWidth(); x++)
-	{
-		for (int y = 0; y < image->getHeight(); y++)
-		{
-			newimage->setPixel(image->getPixel(x, y), x, y);
-		}
-	}
+	Image *newimageH = new Image(image->getWidth(), image->getHeight());
+	Image *newimageV = new Image(image->getWidth(), image->getHeight());
+	Image *newimageFull = new Image(image->getWidth(), image->getHeight());
 
 	//HORIZONTAL
 	for (int x = 1; x < image->getWidth() - 1; x++)
@@ -286,17 +306,10 @@ void Filter::sobel(Image * image)
 			ng = ccolor.g * 255;
 			nb = ccolor.b * 255;
 
-			newimage->setPixel(nr, ng, nb, x, y);
+			newimageH->setPixel(nr, ng, nb, x, y);
 		}
 	}
 
-	for (int x = 0; x < image->getWidth(); x++)
-	{
-		for (int y = 0; y < image->getHeight(); y++)
-		{
-			image->setPixel(newimage->getPixel(x, y), x, y);
-		}
-	}
 	//VERTICAL
 	for (int x = 1; x < image->getWidth() - 1; x++)
 	{
@@ -324,16 +337,38 @@ void Filter::sobel(Image * image)
 			ng = ccolor.g * 255;
 			nb = ccolor.b * 255;
 
-			newimage->setPixel(nr, ng, nb, x, y);
+			newimageV->setPixel(nr, ng, nb, x, y);
 		}
 	}
-	
+
+	//FUSE
+	int white = (255 << 16) | (255 << 8) | 255;
+	for (int x = 1; x < image->getWidth() - 1; x++)
+	{
+		for (int y = 1; y < image->getHeight() - 1; y++)
+		{			
+			
+			long ncolor = newimageH->getPixel(x, y) + newimageV->getPixel(x, y);
+			if (ncolor > white)
+			{
+				ncolor = white;
+			}
+			else if(ncolor < 0)
+			{
+				ncolor = 0;
+			}
+			newimageFull->setPixel(ncolor, x, y);
+		}
+
+	}
+
+
 
 	for (int x = 0; x < image->getWidth(); x++)
 	{
 		for (int y = 0; y < image->getHeight(); y++)
 		{
-			image->setPixel(newimage->getPixel(x, y), x, y);
+			image->setPixel(newimageFull->getPixel(x, y), x, y);
 		}
 	}
 }

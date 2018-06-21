@@ -2,13 +2,14 @@
 
 
 
-Raytrace::Raytrace(vector <Lightsource> ls, vector<Object*> objs, int global_l, int background, int it)
+Raytrace::Raytrace(vector <Lightsource> ls, vector<Object*> objs, int global_l, int background, int it,bool npr)
 {
 	lights = ls;
 	objects = objs;
 	global_lighting = global_l;
 	background_color = background;
 	max_iterations = it;
+	isNPR = npr;
 }
 
 
@@ -235,7 +236,10 @@ int Raytrace::traceRay(glm::vec3 origin, glm::vec3 dir, int iteration, bool isre
 void Raytrace::run(Image *image, float fov)
 {
 	glm::vec3 origin(0, 0, 0);
-
+	if (isNPR)
+	{
+		borderimage = new Image(image->getWidth(), image->getHeight());
+	}
 
 	float aspectratio = (float)image->getWidth() / (float)image->getHeight();
 	float scale = tan(glm::radians(fov * 0.5));
@@ -256,6 +260,24 @@ void Raytrace::run(Image *image, float fov)
 			int newcolor = traceRay(origin, dir,0,false,0);
 			image->setPixel(newcolor, i, j);
 			
+		}
+	}
+
+	if (isNPR)
+	{
+		Filter::greyScale(borderimage);
+		Filter::prewitt(borderimage);
+	}
+}
+
+Image* Raytrace::NPRmix(Image * image)
+{
+	for (int x = 0; x < image->getWidth(); x++)
+	{
+		for (int y = 0; y < image->getHeight(); y++)
+		{
+			if(borderimage->getPixel(x,y) > 13158600)
+				image->setPixel(0,0,0, x, y);
 		}
 	}
 }

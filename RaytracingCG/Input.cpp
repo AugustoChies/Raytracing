@@ -134,11 +134,14 @@ Render* Input::loadScene(const char * sfile)
 	arq >> r >> g >> b;
 	int background = (r << 16) | (g << 8) | b;
 
+	arq >> buffer;
+	bool npr = buffer[0] == 'n';
+
 	int max_iterations;
 	if (modo)
 	{
 		arq >> max_iterations;
-		rend = new Raytrace(arqlights, arqobjs, global_l, background, max_iterations);
+		rend = new Raytrace(arqlights, arqobjs, global_l, background, max_iterations,npr);
 	}
 	else
 	{
