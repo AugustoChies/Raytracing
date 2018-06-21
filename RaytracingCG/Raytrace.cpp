@@ -17,7 +17,7 @@ Raytrace::~Raytrace()
 {
 }
 
-int Raytrace::traceRay(glm::vec3 origin, glm::vec3 dir, int iteration, bool isrefraction, int refraid)
+int Raytrace::traceRay(glm::vec3 origin, glm::vec3 dir, int iteration, bool isrefraction, int refraid,int* borderimgcolor)
 {
 	int rgb = 0;
 	vector <float> ts;
@@ -68,10 +68,13 @@ int Raytrace::traceRay(glm::vec3 origin, glm::vec3 dir, int iteration, bool isre
 		float airl = (float)((global_lighting >> 16) & 0xff) / 255;
 		float aigl = (float)((global_lighting >> 8) & 0xff) / 255;
 		float aibl = (float)(global_lighting & 0xff) / 255;
+		
 
 		glm::vec3 ambient_intensity(airo * airl, aigo *aigl, aibo * aibl);
 		glm::vec3 diffuse_intensity(0, 0, 0);
 		glm::vec3 specular_intensity(0, 0, 0);
+
+		*borderimgcolor = VecToColor(ambient_intensity);
 
 		float shadow_value = 1.0 / lights.size();
 		float shadow_ammount = 0.0f;
@@ -109,10 +112,21 @@ int Raytrace::traceRay(glm::vec3 origin, glm::vec3 dir, int iteration, bool isre
 				float digl = (float)((lights[k].difuse_color >> 8) & 0xff) / 255;
 				float dibl = (float)(lights[k].difuse_color & 0xff) / 255;
 
-				diffuse_intensity.x += diro * dirl * dotproduct;
-				diffuse_intensity.y += digo * digl * dotproduct;
-				diffuse_intensity.z += dibo * dibl * dotproduct;
-
+				if (isNPR)
+				{
+					if (dotproduct > 0.5)
+					{
+						diffuse_intensity.x += diro * dirl;
+						diffuse_intensity.y += digo * digl;
+						diffuse_intensity.z += dibo * dibl;
+					}
+				}
+				else
+				{
+					diffuse_intensity.x += diro * dirl * dotproduct;
+					diffuse_intensity.y += digo * digl * dotproduct;
+					diffuse_intensity.z += dibo * dibl * dotproduct;
+				}
 				//luz especular
 				glm::vec3 refl = reflection(lightdirection, normals[nearestid]);
 				refl = glm::normalize(refl);
@@ -162,7 +176,7 @@ int Raytrace::traceRay(glm::vec3 origin, glm::vec3 dir, int iteration, bool isre
 		glm::vec3 combined_color = final_color;
 
 		
-		if (iteration < max_iterations)
+		if (iteration < max_iterations && !isNPR)
 		{
 			if ((hitobjs[nearestid]->getMaterial()->getReflectiveness() > 0))
 			{
@@ -171,7 +185,7 @@ int Raytrace::traceRay(glm::vec3 origin, glm::vec3 dir, int iteration, bool isre
 					glm::vec3 newdir = reflection(dir, normals[nearestid]);
 					newdir = colisions[nearestid] + newdir * 0.01f;
 					newdir = glm::normalize(newdir);
-					int reflrgb = traceRay(colisions[nearestid], newdir, iteration + 1, false, 0);
+					int reflrgb = traceRay(colisions[nearestid], newdir, iteration + 1, false, 0, borderimgcolor);
 					reflect_color.x = ((reflrgb >> 16) & 0xff) / 255.0;
 					reflect_color.y = ((reflrgb >> 8) & 0xff) / 255.0;
 					reflect_color.z = (reflrgb & 0xff) / 255.0;
@@ -185,7 +199,7 @@ int Raytrace::traceRay(glm::vec3 origin, glm::vec3 dir, int iteration, bool isre
 				{										
 					glm::vec3 newdir = refraction(dir, normals[nearestid],1,hitobjs[nearestid]->getMaterial()->getRefractionQuo());
 					newdir = colisions[nearestid] + newdir * 0.01f; 
-					int refrrgb = traceRay(colisions[nearestid], newdir, iteration, true,hitobjs[nearestid]->getId());
+					int refrrgb = traceRay(colisions[nearestid], newdir, iteration, true,hitobjs[nearestid]->getId(), borderimgcolor);
 					refract_color.x = ((refrrgb >> 16) & 0xff) / 255.0;
 					refract_color.y = ((refrrgb >> 8) & 0xff) / 255.0;
 					refract_color.z = (refrrgb & 0xff) / 255.0;
@@ -197,7 +211,7 @@ int Raytrace::traceRay(glm::vec3 origin, glm::vec3 dir, int iteration, bool isre
 					{
 						glm::vec3 newdir = refraction(dir, normals[nearestid], hitobjs[nearestid]->getMaterial()->getRefractionQuo(),1);
 						newdir = colisions[nearestid] + newdir * 0.01f;
-						int refrrgb = traceRay(colisions[nearestid], newdir, iteration + 1, false, 0);
+						int refrrgb = traceRay(colisions[nearestid], newdir, iteration + 1, false, 0, borderimgcolor);
 						refract_color.x = ((refrrgb >> 16) & 0xff) / 255.0;
 						refract_color.y = ((refrrgb >> 8) & 0xff) / 255.0;
 						refract_color.z = (refrrgb & 0xff) / 255.0;
@@ -226,6 +240,10 @@ int Raytrace::traceRay(glm::vec3 origin, glm::vec3 dir, int iteration, bool isre
 	else
 	{
 		rgb = background_color;
+		if (isNPR)
+		{
+			*borderimgcolor = background_color;
+		}
 	}
 
 	
@@ -256,28 +274,35 @@ void Raytrace::run(Image *image, float fov)
 
 			glm::vec3 dir = pixelpoint - origin;
 			dir = glm::normalize(dir);
+			int borderimgcolor;
 
-			int newcolor = traceRay(origin, dir,0,false,0);
+			int newcolor = traceRay(origin, dir,0,false,0,&borderimgcolor);
 			image->setPixel(newcolor, i, j);
+			if (isNPR)
+			{
+				borderimage->setPixel(borderimgcolor, i, j);
+			}
 			
 		}
 	}
 
 	if (isNPR)
 	{
+		
+		Filter::sobel(borderimage);
 		Filter::greyScale(borderimage);
-		Filter::prewitt(borderimage);
+		NPRmix(image);
 	}
 }
 
-Image* Raytrace::NPRmix(Image * image)
+void Raytrace::NPRmix(Image * image)
 {
 	for (int x = 0; x < image->getWidth(); x++)
 	{
 		for (int y = 0; y < image->getHeight(); y++)
 		{
-			if(borderimage->getPixel(x,y) > 13158600)
-				image->setPixel(0,0,0, x, y);
+			//if(borderimage->getPixel(x,y) > 0)
+				image->setPixel(borderimage->getPixel(x, y), x, y);
 		}
 	}
 }
