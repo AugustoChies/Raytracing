@@ -153,12 +153,19 @@ void Filter::BScale(Image* image)
 
 void Filter::prewitt(Image * image)
 {
-	float horizontalf[3][3] = { {-1,-1,-1},
-								{ 0,0,0 },
-								{1,1,1 } };
-	float verticalf[3][3] = { { -1,0,1 },	
-							  { -1,0,1 },
-	                          { -1,0,1 } };
+	float upf[3][3] = { {-1,-1,-1},
+						{ 0,0,0 },
+						{1,1,1 } };
+	float downf[3][3] = { { 1,1,1 },
+						  { 0,0,0 },
+						  { -1,-1,-1 } };
+
+	float rightf[3][3] = { { -1,0,1 },	
+						   { -1,0,1 },
+	                       { -1,0,1 } };
+	float leftf[3][3] = { { 1,0,-1 },
+						  { 1,0,-1 },
+	                      { 1,0,-1 } };
 
 	Image *newimageFull = new Image(image->getWidth(), image->getHeight());
 	for (int x = 1; x < image->getWidth()-1; x++)
@@ -167,19 +174,31 @@ void Filter::prewitt(Image * image)
 		{
 			int nr, ng, nb;
 			int nr2, ng2, nb2;
+			int nr3, ng3, nb3;
+			int nr4, ng4, nb4;
 			nr = nb = ng = 0;
 			nr2 = nb2 = ng2 = 0;
+			nr3 = nb3 = ng3 = 0;
+			nr4 = nb4 = ng4 = 0;
 			for (int i = 0; i < 3; i++)
 			{
 				for (int j = 0; j < 3; j++)
 				{
-					nr += ((image->getPixel(x + (i - 1), y + (j - 1)) >> 16) & 0xff) * horizontalf[j][i];
-					ng += ((image->getPixel(x + (i - 1), y + (j - 1)) >> 8) & 0xff) * horizontalf[j][i];
-					nb += (image->getPixel(x + (i - 1), y + (j - 1)) & 0xff) * horizontalf[j][i];
+					nr += ((image->getPixel(x + (i - 1), y + (j - 1)) >> 16) & 0xff) * upf[j][i];
+					ng += ((image->getPixel(x + (i - 1), y + (j - 1)) >> 8) & 0xff) * upf[j][i];
+					nb += (image->getPixel(x + (i - 1), y + (j - 1)) & 0xff) * upf[j][i];
 
-					nr2 += ((image->getPixel(x + (i - 1), y + (j - 1)) >> 16) & 0xff) * verticalf[j][i];
-					ng2 += ((image->getPixel(x + (i - 1), y + (j - 1)) >> 8) & 0xff) * verticalf[j][i];
-					nb2 += (image->getPixel(x + (i - 1), y + (j - 1)) & 0xff) * verticalf[j][i];
+					nr2 += ((image->getPixel(x + (i - 1), y + (j - 1)) >> 16) & 0xff) * leftf[j][i];
+					ng2 += ((image->getPixel(x + (i - 1), y + (j - 1)) >> 8) & 0xff) * leftf[j][i];
+					nb2 += (image->getPixel(x + (i - 1), y + (j - 1)) & 0xff) * leftf[j][i];
+
+					nr3 += ((image->getPixel(x + (i - 1), y + (j - 1)) >> 16) & 0xff) * downf[j][i];
+					ng3 += ((image->getPixel(x + (i - 1), y + (j - 1)) >> 8) & 0xff) * downf[j][i];
+					nb3 += (image->getPixel(x + (i - 1), y + (j - 1)) & 0xff) * downf[j][i];
+
+					nr4 += ((image->getPixel(x + (i - 1), y + (j - 1)) >> 16) & 0xff) * rightf[j][i];
+					ng4 += ((image->getPixel(x + (i - 1), y + (j - 1)) >> 8) & 0xff) * rightf[j][i];
+					nb4 += (image->getPixel(x + (i - 1), y + (j - 1)) & 0xff) * rightf[j][i];
 				}
 			}
 			
@@ -190,13 +209,25 @@ void Filter::prewitt(Image * image)
 			nr2 = glm::clamp(nr2, 0, 255);
 			ng2 = glm::clamp(ng2, 0, 255);
 			nb2 = glm::clamp(nb2, 0, 255);
+
+			nr3 = glm::clamp(nr3, 0, 255);
+			ng3 = glm::clamp(ng3, 0, 255);
+			nb3 = glm::clamp(nb3, 0, 255);
+
+			nr4 = glm::clamp(nr4, 0, 255);
+			ng4 = glm::clamp(ng4, 0, 255);
+			nb4 = glm::clamp(nb4, 0, 255);
 			
-			int finalcolor = (glm::clamp((int)sqrt(pow(nr, 2) + pow(nr2, 2)),0,255) << 16) |
+			int finalcolorul = (glm::clamp((int)sqrt(pow(nr, 2) + pow(nr2, 2)),0,255) << 16) |
 				(glm::clamp((int)sqrt(pow(ng, 2) + pow(ng2, 2)), 0, 255) << 8) |
 				glm::clamp((int)sqrt(pow(nb, 2) + pow(nb2, 2)), 0, 255);
+
+			int finalcolorbr = (glm::clamp((int)sqrt(pow(nr3, 2) + pow(nr4, 2)), 0, 255) << 16) |
+				(glm::clamp((int)sqrt(pow(ng3, 2) + pow(ng4, 2)), 0, 255) << 8) |
+				glm::clamp((int)sqrt(pow(nb3, 2) + pow(nb4, 2)), 0, 255);
 			
 		    
-			newimageFull->setPixel(finalcolor, x, y);
+			newimageFull->setPixel(finalcolorul+finalcolorbr, x, y);
 		}
 	}	
 

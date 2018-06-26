@@ -16,7 +16,7 @@ Image *img;
 
 void init(void)
 {
-	img = new Image(300, 300);
+	img = new Image(1024, 720);
 	//img = Input::loadImage("imagem.ptm");
 	renderer = Input::loadScene("scenefile.txt");
 	

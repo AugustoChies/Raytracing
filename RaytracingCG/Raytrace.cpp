@@ -289,7 +289,7 @@ void Raytrace::run(Image *image, float fov)
 	if (isNPR)
 	{
 		
-		Filter::sobel(borderimage);
+		Filter::prewitt(borderimage);
 		Filter::greyScale(borderimage);
 		NPRmix(image);
 	}
@@ -301,8 +301,8 @@ void Raytrace::NPRmix(Image * image)
 	{
 		for (int y = 0; y < image->getHeight(); y++)
 		{
-			//if(borderimage->getPixel(x,y) > 0)
-				image->setPixel(borderimage->getPixel(x, y), x, y);
+			if(borderimage->getPixel(x,y) > 0)
+				image->setPixel(0,0,0, x, y);
 		}
 	}
 }
