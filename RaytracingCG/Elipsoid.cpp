@@ -47,7 +47,7 @@ glm::vec3 Elipsoid::coltest(glm::vec3 porigem, glm::vec3 ray, float& t, int& col
 	}
 	else
 	{
-		float delta = 2 * bq - 4 * aq*cq;
+		float delta = bq * bq - 4 * aq*cq;
 		if (delta == 0)
 		{
 
