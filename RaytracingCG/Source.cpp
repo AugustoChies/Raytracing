@@ -16,7 +16,7 @@ Image *img;
 
 void init(void)
 {
-	img = new Image(1024, 720);
+	img = new Image(300, 300);
 	//img = Input::loadImage("imagem.ptm");
 	renderer = Input::loadScene("scenefile.txt");
 	
@@ -56,8 +56,7 @@ int main(int argc, char** argv)
 	renderer->run(img,60);
 	//Output::saveImage(img, "DefaultSave.ptm");
 	
-	//Filter::greyScale(img);
-	//Filter::prewitt(img);
+	//Filter::HDR(img, 0.1,1);
 
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);

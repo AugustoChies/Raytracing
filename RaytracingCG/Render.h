@@ -4,6 +4,7 @@
 #include "Sphere.h"
 #include "Image.h"
 #include <glm/glm.hpp>
+#include <GLM/gtc/noise.hpp>
 
 using namespace std;
 

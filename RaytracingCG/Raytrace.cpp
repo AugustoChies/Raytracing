@@ -2,7 +2,7 @@
 
 
 
-Raytrace::Raytrace(vector <Lightsource> ls, vector<Object*> objs, int global_l, int background, int it,bool npr)
+Raytrace::Raytrace(vector <Lightsource> ls, vector<Object*> objs, int global_l, int background, int it,bool npr, int borderr, int borderg, int borderb,bool ischalk)
 {
 	lights = ls;
 	objects = objs;
@@ -10,6 +10,8 @@ Raytrace::Raytrace(vector <Lightsource> ls, vector<Object*> objs, int global_l, 
 	background_color = background;
 	max_iterations = it;
 	isNPR = npr;
+	bordercolor = (borderr << 16) | (borderg << 8) | borderb;
+	chalk = ischalk;
 }
 
 
@@ -76,9 +78,6 @@ int Raytrace::traceRay(glm::vec3 origin, glm::vec3 dir, int iteration, bool isre
 
 		*borderimgcolor = VecToColor(ambient_intensity);
 
-		float shadow_value = 1.0 / lights.size();
-		float shadow_ammount = 0.0f;
-
 		for (int k = 0; k < lights.size(); k++)
 		{
 			//luz difusa
@@ -86,74 +85,101 @@ int Raytrace::traceRay(glm::vec3 origin, glm::vec3 dir, int iteration, bool isre
 			lightdirection = glm::normalize(lightdirection);
 			//testa se bate em outro obj no meio do caminho
 			bool bloqueado = false;
+
+			float attenuation = 0;
+			float distancetoblocker, distancetolight;
 			for (int i = 0; i < objects.size(); i++)
-			{				
+			{
 				collide_point = objects[i]->coltest(colisions[nearestid], lightdirection, t, collide, normal);
 				if (collide == 1)
 				{
-					bloqueado = true;
-					break;
+					distancetoblocker = glm::distance(colisions[nearestid], collide_point);
+					distancetolight = glm::distance(lights[k].position, collide_point);
+
+					if (distancetoblocker < distancetolight)
+					{
+						bloqueado = true;
+						attenuation = 1 / distancetoblocker * distancetoblocker;
+						break;
+					}
 				}
-				
+
 			}
 
-			if (!bloqueado)
-			{
-				shadow_ammount += shadow_value;
-
+			//if(!bloqueado)
+			//{
 				float dotproduct = glm::dot(normals[nearestid], lightdirection);
+				
 				dotproduct = glm::clamp(dotproduct, 0.0f, 1.0f);
-
+				
 				float diro = (float)((hitobjs[nearestid]->getMaterial()->getDifuseColor() >> 16) & 0xff) / 255;
 				float digo = (float)((hitobjs[nearestid]->getMaterial()->getDifuseColor() >> 8) & 0xff) / 255;
 				float dibo = (float)(hitobjs[nearestid]->getMaterial()->getDifuseColor() & 0xff) / 255;
-
+	
 				float dirl = (float)((lights[k].difuse_color >> 16) & 0xff) / 255;
 				float digl = (float)((lights[k].difuse_color >> 8) & 0xff) / 255;
 				float dibl = (float)(lights[k].difuse_color & 0xff) / 255;
-
+	
 				if (isNPR)
 				{
-					if (dotproduct > 0.5)
+					if (dotproduct > 0.5 && !bloqueado)
 					{
 						diffuse_intensity.x += diro * dirl;
 						diffuse_intensity.y += digo * digl;
 						diffuse_intensity.z += dibo * dibl;
 					}
+
 				}
 				else
 				{
 					diffuse_intensity.x += diro * dirl * dotproduct;
 					diffuse_intensity.y += digo * digl * dotproduct;
 					diffuse_intensity.z += dibo * dibl * dotproduct;
+	
+					if (bloqueado)
+					{
+						diffuse_intensity.x *= (1 - attenuation);
+						diffuse_intensity.y *= (1 - attenuation);
+						diffuse_intensity.z *= (1 - attenuation);
+					}
 				}
 				//luz especular
 				glm::vec3 refl = reflection(lightdirection, normals[nearestid]);
 				refl = glm::normalize(refl);
 				glm::vec3 toviewer = origin - colisions[nearestid];
 				toviewer = glm::normalize(toviewer);
-
+	
 				dotproduct = glm::dot(refl, toviewer);
 				dotproduct = glm::clamp(dotproduct, 0.0f, 1.0f);
-
+	
 				if (dotproduct > 0.0f)
 				{
 					float specular_factor = pow(dotproduct, hitobjs[nearestid]->getMaterial()->getSpecularQuo());
-
+	
 					float siro = (float)((hitobjs[nearestid]->getMaterial()->getSpecularColor() >> 16) & 0xff) / 255;
 					float sigo = (float)((hitobjs[nearestid]->getMaterial()->getSpecularColor() >> 8) & 0xff) / 255;
 					float sibo = (float)(hitobjs[nearestid]->getMaterial()->getSpecularColor() & 0xff) / 255;
-
+	
 					float sirl = (float)((lights[k].specular_color >> 16) & 0xff) / 255;
 					float sigl = (float)((lights[k].specular_color >> 8) & 0xff) / 255;
 					float sibl = (float)(lights[k].specular_color & 0xff) / 255;
-
+	
 					specular_intensity.x += siro * sirl * specular_factor;
 					specular_intensity.y += sigo * sigl * specular_factor;
 					specular_intensity.z += sibo * sibl * specular_factor;
+	
+					if (bloqueado)
+					{
+						if (!isNPR)
+						{
+							specular_intensity.x *= (1 - attenuation);
+							specular_intensity.y *= (1 - attenuation);
+							specular_intensity.z *= (1 - attenuation);
+						}
+					}
 				}
-
-			}
+			//}
+			
 
 		}
 	
@@ -218,15 +244,6 @@ int Raytrace::traceRay(glm::vec3 origin, glm::vec3 dir, int iteration, bool isre
 						combined_color = blendColor(combined_color, refract_color, 1.0);
 					}
 				}
-			}
-		}
-
-		if (shadow_ammount < 1)
-		{
-			//combined_color *= shadow_ammount;
-			if (shadow_ammount == 0)
-			{
-				//combined_color = ambient_intensity;
 			}
 		}
 		
@@ -302,7 +319,53 @@ void Raytrace::NPRmix(Image * image)
 		for (int y = 0; y < image->getHeight(); y++)
 		{
 			if(borderimage->getPixel(x,y) > 0)
-				image->setPixel(0,0,0, x, y);
+				image->setPixel(bordercolor, x, y);
+		}
+	}
+
+	if (chalk)
+	{
+		char *data = new char[image->getWidth() * image->getHeight() * 4];
+
+		float xFactor = 1.0f / (image->getWidth() - 1);
+		float yFactor = 1.0f / (image->getHeight() - 1);
+
+		float a = 10;//modificaveis a,b e limit
+		float b = 1;
+		int limit = 250;
+
+		for (int row = 0; row < image->getHeight(); row++) 
+		{
+			for (int col = 0; col < image->getWidth(); col++)
+			{
+				float x = xFactor * col;
+				float y = yFactor * row;
+				float sum = 0.0f;
+				float freq = a;
+				float scale = b;
+
+				// Compute the sum for each octave
+				for (int oct = 0; oct < 4; oct++) {
+					glm::vec2 p(x * freq, y * freq);
+					float val = 0.0f;
+					val = glm::perlin(p, glm::vec2(freq)) / scale;
+					sum += val;
+					float result = (sum + 1.0f) / 2.0f;
+					 
+					// Store in texture buffer 
+					data[((row * image->getWidth() + col) * 4) + oct] =	(char)(result * 255.0f);						
+					
+					
+					freq *= 2.0f;   // Double the frequency
+					scale *= b;     // Next power of b
+				}
+				if ((int)(data[((row * image->getWidth() + col) * 4) + 3]) + 128 > limit)
+				{
+					image->setPixel(background_color, col, row);
+				}
+				//int newgrey = (int)(data[((row * image->getWidth() + col) * 4) + 3]) + 128;
+				//image->setPixel(newgrey, newgrey, newgrey, col, row);
+			}
 		}
 	}
 }

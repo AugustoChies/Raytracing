@@ -16,5 +16,6 @@ public:
 	static void BScale(Image* image);
 	static void prewitt(Image * image);
 	static void sobel(Image * image);
+	static void HDR(Image* image,float alpha,int cellsize);
 };
 

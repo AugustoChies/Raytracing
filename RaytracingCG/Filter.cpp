@@ -297,3 +297,129 @@ void Filter::sobel(Image * image)
 		}
 	}
 }
+
+void Filter::HDR(Image * image, float alpha, int cellsize)
+{
+	float **intensidades;
+	int intwidth = image->getWidth() / cellsize;
+	int intheight = image->getHeight() / cellsize;
+
+	intensidades = new float*[intwidth];
+
+	for (int i = 0; i < intwidth; i++)
+	{
+		intensidades[i] = new float[intheight];
+	}
+
+	for (int x = 0; x < intwidth; x++)
+	{
+		for (int y = 0; y < intheight; y++)
+		{
+
+			float tempintensity = 0;
+
+			for (int i = 0; i < cellsize; i++)
+			{
+				for (int j = 0; j < cellsize; j++)
+				{
+					int r = (image->getPixel((x * cellsize) + i, (y * cellsize) + j) >> 16) & 0xff;
+					int g = (image->getPixel((x * cellsize) + i, (y * cellsize) + j) >> 8) & 0xff;
+					int b = image->getPixel((x * cellsize) + i, (y * cellsize) + j) & 0xff;
+					float fr = r / 255.0;
+					float fg = g / 255.0;
+					float fb = b / 255.0;
+
+					fr *= 0.27;
+					fg *= 0.66;
+					fb *= 0.06;
+
+					tempintensity = fr + fg + fb;
+				}
+			}
+
+			intensidades[x][y] = tempintensity; // (cellsize*cellsize);
+		}
+
+	}
+
+	for (int x = 0; x < intwidth; x++)
+	{
+		for (int y = 0; y < intheight; y++)
+		{
+			//std::cout << intensidades[x][y] << " " << intwidth << std::endl;
+		}
+	}
+
+
+	for (int x = 0; x < intwidth; x++)
+	{
+		for (int y = 0; y < intheight; y++)
+		{
+			for (int i = 0; i < cellsize; i++)
+			{
+				for (int j = 0; j < cellsize; j++)
+				{
+					int r = (image->getPixel((x * cellsize) + i, (y * cellsize) + j) >> 16) & 0xff;
+					int g = (image->getPixel((x * cellsize) + i, (y * cellsize) + j) >> 8) & 0xff;
+					int b = image->getPixel((x * cellsize) + i, (y * cellsize) + j) & 0xff;
+					float fr = r / 255.0;
+					float fg = g / 255.0;
+					float fb = b / 255.0;
+
+					float finalr = (alpha / intensidades[x][y]) * fr + fr;
+					float finalg = (alpha / intensidades[x][y]) * fg + fg;
+					float finalb = (alpha / intensidades[x][y]) * fb + fb;
+
+					image->setPixel(glm::clamp((int)(finalr * 255), 0, 255),
+						glm::clamp((int)(finalg * 255), 0, 255),
+						glm::clamp((int)(finalb * 255), 0, 255),
+						(x * cellsize) + i, (y * cellsize) + j);
+				}
+			}
+		}
+	}
+
+}
+
+/*void Filter::HDR(Image * image, float alpha)
+{
+	double imedia = 0;
+	for (int x = 0; x < image->getWidth(); x++)
+	{
+		for (int y = 0; y < image->getHeight(); y++)
+		{
+			int r = (image->getPixel(x,y) >> 16) & 0xff;
+			int g = (image->getPixel(x, y) >> 8) & 0xff;
+			int b = image->getPixel(x, y) & 0xff;
+			float fr = r / 255.0;
+			float fg = g / 255.0;
+			float fb = b / 255.0;
+
+			imedia += (fr * 0.27) + (fg * 0.66) + (fb * 0.06);
+		}			  
+	}				  
+	imedia /= image->getWidth() *  image->getHeight();
+	
+	for (int x = 0; x < image->getWidth(); x++)
+	{
+		for (int y = 0; y < image->getHeight(); y++)
+		{
+			int r = (image->getPixel(x, y) >> 16) & 0xff;
+			int g = (image->getPixel(x, y) >> 8) & 0xff;
+			int b = image->getPixel(x, y) & 0xff;
+			float fr = r / 255.0;
+			float fg = g / 255.0;
+			float fb = b / 255.0;
+
+			float finalr = (alpha / imedia) * fr;
+			float finalg = (alpha / imedia) * fg;
+            float finalb = (alpha / imedia) * fb;
+
+			image->setPixel(glm::clamp((int)(finalr * 255), 0, 255),
+				glm::clamp((int)(finalg * 255), 0, 255),
+				glm::clamp((int)(finalb * 255), 0, 255), x, y);
+		}
+	}
+
+}
+*/
